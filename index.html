@@ -52,7 +52,7 @@
     </div>
 
     <div class="small">
-      Введи призы через запятую и жми «Крутить». Это простой пример без библиотек.
+      Введи призы через запятую и жми «Крутить».
     </div>
 
     <div class="inputs" style="margin-top: 12px;">
@@ -73,6 +73,14 @@
   </div>
 
   <script>
+  const tg = window.Telegram?.WebApp;
+
+  if (tg) {
+    tg.ready();
+    tg.expand();
+    tg.MainButton.hide();
+}
+
     // ====== Настройки и состояние ======
     const canvas = document.getElementById("wheel");
     const ctx = canvas.getContext("2d");
@@ -184,6 +192,9 @@
       drawWheel();
 
       spinning = true;
+
+      if (tg) tg.MainButton.hide();
+
       spinBtn.disabled = true;
       setStatus("Крутим…");
 
@@ -221,7 +232,22 @@
           const prize = items[idx];
 
           resultEl.textContent = "Результат: " + prize;
-          debugEl.textContent = `Сектор #${idx + 1} из ${items.length}`;
+
+if (tg) {
+  tg.MainButton.setText("Забрать приз");
+  tg.MainButton.show();
+
+  // чтобы обработчик не накапливался при повторных вращениях
+  tg.MainButton.offClick?.();
+
+  tg.MainButton.onClick(() => {
+    tg.sendData(JSON.stringify({ prize, idx, items }));
+    // tg.close(); // включишь позже, если захочешь закрывать окно
+  });
+}
+
+debugEl.textContent = `Сектор #${idx + 1} из ${items.length}`;
+
 
           setStatus("Готово");
           spinning = false;
@@ -242,5 +268,8 @@
     // первый рендер
     drawWheel();
   </script>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
 </body>
 </html>
+
