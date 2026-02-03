@@ -30,16 +30,58 @@
       pointer-events: none;
       z-index: 4;
     }
+    .win-bow {
+      position: absolute;
+      top: 6%;
+      left: 6%;
+      width: clamp(120px, 26vw, 170px);
+      opacity: 0;
+      transform: translateY(-10px) scale(0.95);
+      filter: drop-shadow(0 10px 20px rgba(0,0,0,0.45));
+      transition: opacity 180ms ease, transform 220ms ease;
+      pointer-events: none;
+    }
+    .win-bow svg { width: 100%; height: auto; display: block; }
+    .win-bow.is-visible {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+    .bow-string {
+      transform-origin: 60% 50%;
+      transition: transform 260ms ease;
+    }
+    .bow-limb {
+      transform-origin: 50% 50%;
+      transition: transform 260ms ease;
+    }
     .win-arrow {
       position: absolute;
-      width: 96px;
-      height: 28px;
+      width: clamp(120px, 30vw, 170px);
+      height: auto;
       opacity: 0;
-      transform-origin: 84% 50%;
+      transform-origin: 82% 50%;
       filter: drop-shadow(0 6px 10px rgba(0,0,0,0.45));
+      pointer-events: none;
     }
     .win-arrow svg { width: 100%; height: 100%; display: block; }
     .win-arrow.is-active { opacity: 1; }
+    .win-arrow.is-nocked {
+      opacity: 1;
+      transform: translate(var(--bow-x), var(--bow-y)) translate(-82%, -50%) rotate(var(--bow-rot));
+      transition: transform 260ms ease, opacity 120ms ease;
+    }
+    .win-overlay.is-drawing .win-arrow.is-nocked {
+      transform: translate(var(--bow-x), var(--bow-y)) translate(-82%, -50%) rotate(var(--bow-rot)) translateX(-20px);
+    }
+    .win-overlay.is-drawing .bow-string {
+      transform: translateX(-10px);
+    }
+    .win-overlay.is-drawing .bow-limb.left {
+      transform: rotate(-1.2deg);
+    }
+    .win-overlay.is-drawing .bow-limb.right {
+      transform: rotate(1.2deg);
+    }
     .win-arrow.is-animating {
       animation:
         arrow-flight 700ms cubic-bezier(0.2, 0.7, 0.2, 1) forwards,
@@ -67,45 +109,78 @@
         transform: translate(var(--end-x), var(--end-y)) translate(-84%, -50%) rotate(var(--end-rot)) scale(1);
       }
     }
-    .win-banner {
+    .win-modal-backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(5, 8, 18, 0.72);
+      opacity: 0;
+      transition: opacity 220ms ease;
+      pointer-events: auto;
+    }
+    .win-modal {
       position: absolute;
       left: 50%;
-      bottom: 8px;
-      transform: translateX(-50%) scale(0.95);
-      background: #ffffff;
-      color: #111827;
-      border-radius: 14px;
-      padding: 10px 14px 12px;
-      min-width: min(280px, 88%);
-      box-shadow: 0 12px 30px rgba(0,0,0,.25);
+      top: 50%;
+      width: min(92%, 420px);
+      transform: translate(-50%, -50%) scale(0.92);
+      background: linear-gradient(180deg, #ffffff 0%, #f4f7ff 100%);
+      color: #0f172a;
+      border-radius: 24px;
+      padding: 26px 22px 22px;
+      box-shadow: 0 25px 60px rgba(0,0,0,0.35);
       opacity: 0;
-      pointer-events: none;
+      transition: opacity 220ms ease, transform 240ms ease;
+      pointer-events: auto;
+    }
+    .win-modal__title {
+      font-size: 20px;
+      font-weight: 800;
+      margin-bottom: 10px;
       text-align: center;
     }
-    .win-banner.is-visible {
-      opacity: 1;
-      transform: translateX(-50%) scale(1);
-      pointer-events: auto;
-      animation: banner-pop 280ms ease-out;
+    .win-modal__prize {
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 6px;
+      text-align: center;
     }
-    .win-banner__title { font-size: 16px; font-weight: 800; margin-bottom: 4px; }
-    .win-banner__text { font-size: 14px; color: #1f2937; }
-    .win-banner__close {
+    .win-modal__sector {
+      font-size: 14px;
+      color: #475569;
+      text-align: center;
+      margin-bottom: 18px;
+    }
+    .win-modal__close {
       position: absolute;
-      top: 6px;
-      right: 8px;
+      top: 12px;
+      right: 14px;
       border: 0;
-      background: transparent;
+      background: rgba(15, 23, 42, 0.08);
+      color: #0f172a;
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
       font-size: 18px;
       line-height: 1;
       cursor: pointer;
-      color: #6b7280;
-      padding: 0;
+    }
+    .win-modal__button {
+      width: 100%;
+      background: #2563eb;
+      padding: 14px 16px;
+      font-size: 16px;
+      border-radius: 14px;
+      box-shadow: 0 12px 24px rgba(37,99,235,0.3);
+    }
+    .win-overlay.is-modal-open {
       pointer-events: auto;
     }
-    @keyframes banner-pop {
-      from { opacity: 0; transform: translateX(-50%) scale(0.9); }
-      to { opacity: 1; transform: translateX(-50%) scale(1); }
+    .win-overlay.is-modal-open .win-modal-backdrop,
+    .win-overlay.is-modal-open .win-modal {
+      opacity: 1;
+    }
+    .win-overlay.is-modal-open .win-modal {
+      transform: translate(-50%, -50%) scale(1);
     }
     button {
       appearance: none; border: 0; cursor: pointer;
@@ -181,29 +256,58 @@
       </div>
       <canvas id="wheel" width="360" height="360"></canvas>
       <div class="win-overlay" id="winOverlay" aria-hidden="true">
-        <div class="win-arrow" id="winArrow">
-          <svg viewBox="0 0 96 28" xmlns="http://www.w3.org/2000/svg">
+        <div class="win-bow" id="winBow">
+          <svg viewBox="0 0 220 220" xmlns="http://www.w3.org/2000/svg">
             <defs>
-              <linearGradient id="arrowShaft" x1="0" x2="1" y1="0" y2="0">
-                <stop offset="0" stop-color="#6b7280"/>
-                <stop offset="0.5" stop-color="#d1d5db"/>
-                <stop offset="1" stop-color="#9ca3af"/>
+              <linearGradient id="bowWood" x1="0" x2="1" y1="0" y2="1">
+                <stop offset="0" stop-color="#3b2413"/>
+                <stop offset="0.5" stop-color="#7a4a24"/>
+                <stop offset="1" stop-color="#2a160a"/>
               </linearGradient>
-              <linearGradient id="arrowHead" x1="0" x2="1" y1="0" y2="0">
-                <stop offset="0" stop-color="#fbbf24"/>
-                <stop offset="1" stop-color="#f59e0b"/>
+              <linearGradient id="bowHighlight" x1="0" x2="0" y1="0" y2="1">
+                <stop offset="0" stop-color="rgba(255,255,255,0.35)"/>
+                <stop offset="1" stop-color="rgba(255,255,255,0)"/>
               </linearGradient>
             </defs>
-            <path d="M6 8 L68 8 L68 4 L90 14 L68 24 L68 20 L6 20 Z" fill="url(#arrowShaft)" stroke="#374151" stroke-width="1.2" stroke-linejoin="round"/>
-            <path d="M64 6 L90 14 L64 22 Z" fill="url(#arrowHead)" stroke="#7c2d12" stroke-width="1"/>
-            <circle cx="10" cy="14" r="4" fill="#111827"/>
-            <circle cx="10" cy="14" r="2" fill="#f59e0b"/>
+            <path class="bow-limb left" d="M60 20 C30 70 30 150 60 200" stroke="url(#bowWood)" stroke-width="16" stroke-linecap="round" fill="none"/>
+            <path class="bow-limb right" d="M160 20 C190 70 190 150 160 200" stroke="url(#bowWood)" stroke-width="16" stroke-linecap="round" fill="none"/>
+            <path d="M60 20 C35 70 35 150 60 200" stroke="url(#bowHighlight)" stroke-width="6" stroke-linecap="round" fill="none" opacity="0.5"/>
+            <rect x="96" y="86" width="28" height="48" rx="12" fill="#1f2937" opacity="0.85"/>
+            <rect x="100" y="92" width="20" height="36" rx="8" fill="#374151"/>
+            <path class="bow-string" d="M64 30 Q110 110 64 190" stroke="#e2e8f0" stroke-width="2" fill="none"/>
+            <path class="bow-string" d="M156 30 Q110 110 156 190" stroke="#e2e8f0" stroke-width="2" fill="none"/>
           </svg>
         </div>
-        <div class="win-banner" id="winBanner">
-          <button class="win-banner__close" type="button" aria-label="Закрыть">×</button>
-          <div class="win-banner__title">Поздравляем!</div>
-          <div class="win-banner__text" id="winPrizeText">—</div>
+        <div class="win-arrow" id="winArrow">
+          <svg viewBox="0 0 180 32" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="arrowShaft" x1="0" x2="1" y1="0" y2="0">
+                <stop offset="0" stop-color="#3f2d1b"/>
+                <stop offset="0.45" stop-color="#5a3b24"/>
+                <stop offset="0.7" stop-color="#2d1c10"/>
+                <stop offset="1" stop-color="#3b2a1a"/>
+              </linearGradient>
+              <linearGradient id="arrowHead" x1="0" x2="1" y1="0" y2="0">
+                <stop offset="0" stop-color="#cbd5e1"/>
+                <stop offset="0.6" stop-color="#94a3b8"/>
+                <stop offset="1" stop-color="#64748b"/>
+              </linearGradient>
+            </defs>
+            <rect x="18" y="13" width="122" height="6" rx="3" fill="url(#arrowShaft)"/>
+            <rect x="18" y="12" width="122" height="2" rx="1" fill="rgba(255,255,255,0.2)"/>
+            <path d="M140 8 L174 16 L140 24 Z" fill="url(#arrowHead)" stroke="#475569" stroke-width="1"/>
+            <path d="M14 10 L30 16 L14 22 Z" fill="#f8fafc" stroke="#64748b" stroke-width="1"/>
+            <path d="M2 6 C8 6 10 12 10 16 C10 20 8 26 2 26" fill="#cbd5f5"/>
+            <path d="M6 6 C12 6 14 12 14 16 C14 20 12 26 6 26" fill="#94a3b8"/>
+          </svg>
+        </div>
+        <div class="win-modal-backdrop" id="winModalBackdrop"></div>
+        <div class="win-modal" id="winModal" role="dialog" aria-modal="true">
+          <button class="win-modal__close" type="button" aria-label="Закрыть">×</button>
+          <div class="win-modal__title">Фортуна сегодня на вашей стороне!🎉</div>
+          <div class="win-modal__prize" id="winPrizeText">Ваш приз: —</div>
+          <div class="win-modal__sector" id="winSectorText">Сектор: —</div>
+          <button class="win-modal__button" id="winClaimBtn">Забрать приз</button>
         </div>
       </div>
     </div>
@@ -340,10 +444,14 @@ function playWin() {
     const debugEl = document.getElementById("debug");
     const swordPointer = document.getElementById("swordPointer");
     const winOverlay = document.getElementById("winOverlay");
+    const winBow = document.getElementById("winBow");
     const winArrow = document.getElementById("winArrow");
-    const winBanner = document.getElementById("winBanner");
     const winPrizeText = document.getElementById("winPrizeText");
-    const winBannerClose = winBanner?.querySelector(".win-banner__close");
+    const winSectorText = document.getElementById("winSectorText");
+    const winModal = document.getElementById("winModal");
+    const winModalBackdrop = document.getElementById("winModalBackdrop");
+    const winClaimBtn = document.getElementById("winClaimBtn");
+    const winModalClose = winModal?.querySelector(".win-modal__close");
 
     const itemsInput = document.getElementById("itemsInput");
     const seedInput = document.getElementById("seedInput");
@@ -352,6 +460,8 @@ function playWin() {
     let angle = 0;          // текущий угол вращения
     let spinning = false;
     let swordTicking = false;
+    let winTimeouts = [];
+    let lastWin = null;
 
     // Визуал
     const size = canvas.width;
@@ -386,22 +496,25 @@ function playWin() {
 
     // ====== Win Effects ======
     function clearWinEffects() {
-      if (!winArrow || !winBanner || !winPrizeText) return;
-      winArrow.classList.remove("is-animating", "is-active");
-      winBanner.classList.remove("is-visible");
-      winPrizeText.textContent = "—";
+      if (!winArrow || !winOverlay || !winPrizeText || !winModal || !winBow) return;
+      winTimeouts.forEach((timeout) => window.clearTimeout(timeout));
+      winTimeouts = [];
+      winArrow.classList.remove("is-animating", "is-active", "is-nocked");
+      winBow.classList.remove("is-visible");
+      winOverlay.classList.remove("is-drawing", "is-modal-open");
+      winPrizeText.textContent = "Ваш приз: —";
+      if (winSectorText) winSectorText.textContent = "Сектор: —";
       winArrow.style.animation = "none";
       winArrow.offsetHeight;
       winArrow.style.animation = "";
     }
 
-    function getWinningTarget(idx) {
-      const n = items.length;
-      const slice = (Math.PI * 2) / n;
-      const centerAngle = angle + idx * slice + slice / 2;
-      const radius = r * 0.68;
-      const targetX = cx + Math.cos(centerAngle) * radius;
-      const targetY = cy + Math.sin(centerAngle) * radius;
+    function computeTargetPoint(idx, count, wheelRadius, finalAngle) {
+      const slice = (Math.PI * 2) / count;
+      const targetAngle = finalAngle + idx * slice + slice / 2;
+      const radius = wheelRadius * 0.7;
+      const targetX = cx + Math.cos(targetAngle) * radius;
+      const targetY = cy + Math.sin(targetAngle) * radius;
       const rect = winOverlay.getBoundingClientRect();
       const scale = rect.width / canvas.width;
       return {
@@ -411,24 +524,54 @@ function playWin() {
       };
     }
 
-    function runWinEffects({ idx, prize }) {
-      if (!winArrow || !winBanner || !winOverlay || !winPrizeText) return;
-      clearWinEffects();
-      const rect = winOverlay.getBoundingClientRect();
-      const startX = -rect.width * 0.2;
-      const startY = -rect.height * 0.2;
-      const target = getWinningTarget(idx);
+    function getBowAnchorPoint() {
+      const bowRect = winBow.getBoundingClientRect();
+      const overlayRect = winOverlay.getBoundingClientRect();
+      return {
+        x: bowRect.left + bowRect.width * 0.78 - overlayRect.left,
+        y: bowRect.top + bowRect.height * 0.5 - overlayRect.top
+      };
+    }
+
+    function showWinModal({ idx, prize, items }) {
+      if (!winOverlay || !winModal || !winPrizeText) return;
+      winPrizeText.textContent = `Ваш приз: ${prize}`;
+      if (winSectorText) {
+        winSectorText.textContent = `Сектор: #${idx + 1} из ${items.length}`;
+      }
+      winOverlay.classList.add("is-modal-open");
+    }
+
+    function claimPrize() {
+      if (!lastWin) return;
+      const payload = { prize: lastWin.prize, idx: lastWin.idx, items: lastWin.items };
+      if (tg) {
+        tg.sendData(JSON.stringify(payload));
+      } else {
+        console.log("Claim prize:", payload);
+      }
+      winOverlay?.classList.remove("is-modal-open");
+    }
+
+    function shootSequence({ idx, prize, items }) {
+      if (!winArrow || !winBow || !winOverlay) return;
+      const overlayRect = winOverlay.getBoundingClientRect();
+      const start = getBowAnchorPoint();
+      const target = computeTargetPoint(idx, items.length, r, angle);
       const endX = target.x;
       const endY = target.y;
-      const midX = (startX + endX) / 2 - rect.width * 0.08;
-      const midY = (startY + endY) / 2 - rect.height * 0.18;
+      const midX = (start.x + endX) / 2 - overlayRect.width * 0.06;
+      const midY = (start.y + endY) / 2 - overlayRect.height * 0.18;
 
-      const startRot = Math.atan2(midY - startY, midX - startX) * (180 / Math.PI);
+      const startRot = Math.atan2(endY - start.y, endX - start.x) * (180 / Math.PI);
       const midRot = Math.atan2(endY - midY, endX - midX) * (180 / Math.PI);
       const endRot = midRot;
 
-      winArrow.style.setProperty("--start-x", `${startX}px`);
-      winArrow.style.setProperty("--start-y", `${startY}px`);
+      winArrow.style.setProperty("--bow-x", `${start.x}px`);
+      winArrow.style.setProperty("--bow-y", `${start.y}px`);
+      winArrow.style.setProperty("--bow-rot", `${startRot}deg`);
+      winArrow.style.setProperty("--start-x", `${start.x}px`);
+      winArrow.style.setProperty("--start-y", `${start.y}px`);
       winArrow.style.setProperty("--mid-x", `${midX}px`);
       winArrow.style.setProperty("--mid-y", `${midY}px`);
       winArrow.style.setProperty("--end-x", `${endX}px`);
@@ -437,18 +580,49 @@ function playWin() {
       winArrow.style.setProperty("--mid-rot", `${midRot}deg`);
       winArrow.style.setProperty("--end-rot", `${endRot}deg`);
 
-      winArrow.classList.add("is-active");
-      winArrow.classList.add("is-animating");
+      winBow.classList.add("is-visible");
+      winOverlay.classList.add("is-drawing");
+      winArrow.classList.add("is-active", "is-nocked");
 
-      window.setTimeout(() => {
-        winPrizeText.textContent = prize;
-        winBanner.classList.add("is-visible");
-      }, 880);
+      const drawDuration = 320;
+      const releaseDelay = drawDuration + 60;
+      const modalDelay = releaseDelay + 980;
+
+      winTimeouts.push(window.setTimeout(() => {
+        winOverlay.classList.remove("is-drawing");
+      }, drawDuration));
+
+      winTimeouts.push(window.setTimeout(() => {
+        winArrow.classList.remove("is-nocked");
+        winArrow.classList.add("is-animating");
+      }, releaseDelay));
+
+      winTimeouts.push(window.setTimeout(() => {
+        winBow.classList.remove("is-visible");
+      }, releaseDelay + 350));
+
+      winTimeouts.push(window.setTimeout(() => {
+        showWinModal({ idx, prize, items });
+      }, modalDelay));
     }
 
-    winBannerClose?.addEventListener("click", (event) => {
+    function runWinEffects({ idx, prize, items }) {
+      if (!winArrow || !winOverlay || !winPrizeText) return;
+      clearWinEffects();
+      lastWin = { idx, prize, items };
+      shootSequence({ idx, prize, items });
+    }
+
+    winModalClose?.addEventListener("click", (event) => {
       event.stopPropagation();
-      winBanner.classList.remove("is-visible");
+      winOverlay?.classList.remove("is-modal-open");
+    });
+    winModalBackdrop?.addEventListener("click", () => {
+      winOverlay?.classList.remove("is-modal-open");
+    });
+    winClaimBtn?.addEventListener("click", (event) => {
+      event.preventDefault();
+      claimPrize();
     });
 
     // ====== Рендер колеса ======
@@ -733,7 +907,7 @@ if (tickStep !== lastTickStep) {
 
           resultEl.textContent = "Результат: " + prize;
           playWin();
-          runWinEffects({ idx, prize });
+          runWinEffects({ idx, prize, items });
 
 
 if (tg) {
