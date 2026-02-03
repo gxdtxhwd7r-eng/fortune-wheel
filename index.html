@@ -74,6 +74,64 @@
 
   <script>
   const tg = window.Telegram?.WebApp;
+    // ====== Sound (Web Audio) ======
+let audioCtx = null;
+let soundEnabled = true;
+let lastTickStep = null;
+
+function ensureAudio() {
+  if (!soundEnabled) return null;
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  if (audioCtx.state === "suspended") audioCtx.resume();
+  return audioCtx;
+}
+
+function playTick() {
+  const ac = ensureAudio();
+  if (!ac) return;
+
+  const o = ac.createOscillator();
+  const g = ac.createGain();
+
+  o.type = "square";
+  o.frequency.value = 1400;
+
+  const now = ac.currentTime;
+  g.gain.setValueAtTime(0.0001, now);
+  g.gain.exponentialRampToValueAt(0.08, now + 0.003);
+  g.gain.exponentialRampToValueAt(0.0001, now + 0.035);
+
+  o.connect(g);
+  g.connect(ac.destination);
+  o.start(now);
+  o.stop(now + 0.04);
+}
+
+function playWin() {
+  const ac = ensureAudio();
+  if (!ac) return;
+
+  const o = ac.createOscillator();
+  const g = ac.createGain();
+
+  o.type = "sine";
+
+  const now = ac.currentTime;
+  g.gain.setValueAtTime(0.0001, now);
+  g.gain.exponentialRampToValueAt(0.12, now + 0.01);
+  g.gain.exponentialRampToValueAt(0.0001, now + 0.25);
+
+  o.frequency.setValueAtTime(880, now);
+  o.frequency.setValueAtTime(1320, now + 0.08);
+  o.frequency.setValueAtTime(990, now + 0.16);
+
+  o.connect(g);
+  g.connect(ac.destination);
+  o.start(now);
+  o.stop(now + 0.28);
+}
 
   if (tg) {
     tg.ready();
@@ -192,6 +250,8 @@
       drawWheel();
 
       spinning = true;
+      lastTickStep = null;
+
 
       if (tg) tg.MainButton.hide();
 
@@ -220,6 +280,15 @@
         const t = Math.min(1, (now - t0) / duration);
         const eased = easeOutCubic(t);
         angle = start + delta * eased;
+        const n = items.length;
+const step = (Math.PI * 2) / (n * 2);
+const tickStep = Math.floor(angle / step);
+
+if (tickStep !== lastTickStep) {
+  lastTickStep = tickStep;
+  playTick();
+      }
+
 
         drawWheel();
 
@@ -232,6 +301,8 @@
           const prize = items[idx];
 
           resultEl.textContent = "Результат: " + prize;
+          playWin();
+
 
 if (tg) {
   tg.MainButton.setText("Забрать приз");
@@ -259,7 +330,11 @@ debugEl.textContent = `Сектор #${idx + 1} из ${items.length}`;
     }
 
     // ====== События ======
-    spinBtn.addEventListener("click", spin);
+    spinBtn.addEventListener("click", () => {
+  ensureAudio();
+  spin();
+    });
+
     itemsInput.addEventListener("change", () => {
       items = parseItems(itemsInput.value);
       drawWheel();
@@ -272,4 +347,5 @@ debugEl.textContent = `Сектор #${idx + 1} из ${items.length}`;
 
 </body>
 </html>
+
 
