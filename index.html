@@ -18,7 +18,7 @@
       left: 50%;
       width: 72px;
       transform: translateX(-50%) rotate(0deg);
-      transform-origin: 50% 14%;
+      transform-origin: 50% 20%;
       z-index: 3;
       filter: drop-shadow(0 6px 10px rgba(0,0,0,.45));
       pointer-events: none;
@@ -60,7 +60,7 @@
     </div>
 
     <div class="inputs" style="margin-top: 12px;">
-      <input id="itemsInput" value="100⭐, 50⭐, 10⭐, Ничего, Скидка 10%, Скидка 30%, Сюрприз" />
+      <input id="itemsInput" placeholder="(введи призы через запятую)" />
       <input id="seedInput" placeholder="(опционально) сид, например 123" />
     </div>
 
@@ -83,9 +83,8 @@
           <circle cx="60" cy="18" r="4" fill="#3a240f"/>
           <rect x="52" y="28" width="16" height="30" rx="6" fill="#5d3a1c"/>
           <rect x="28" y="60" width="64" height="16" rx="8" fill="url(#hiltGrad)" stroke="#6a4a21" stroke-width="2"/>
-          <rect x="54" y="76" width="12" height="72" rx="5" fill="url(#bladeGrad)" stroke="#707785" stroke-width="2"/>
           <rect x="52" y="72" width="16" height="10" rx="5" fill="#a9b2c2"/>
-          <polygon points="60,160 50,180 70,180" fill="url(#bladeGrad)" stroke="#707785" stroke-width="2"/>
+          <path d="M54 80 L66 80 L66 156 L60 178 L54 156 Z" fill="url(#bladeGrad)" stroke="#707785" stroke-width="2" stroke-linejoin="round"/>
         </svg>
       </div>
       <canvas id="wheel" width="360" height="360"></canvas>
