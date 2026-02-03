@@ -24,6 +24,89 @@
       pointer-events: none;
     }
     #swordPointer svg { width: 100%; height: auto; display: block; }
+    .win-overlay {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 4;
+    }
+    .win-arrow {
+      position: absolute;
+      width: 96px;
+      height: 28px;
+      opacity: 0;
+      transform-origin: 84% 50%;
+      filter: drop-shadow(0 6px 10px rgba(0,0,0,0.45));
+    }
+    .win-arrow svg { width: 100%; height: 100%; display: block; }
+    .win-arrow.is-active { opacity: 1; }
+    .win-arrow.is-animating {
+      animation:
+        arrow-flight 700ms cubic-bezier(0.2, 0.7, 0.2, 1) forwards,
+        arrow-impact 220ms 700ms ease-out forwards;
+    }
+    @keyframes arrow-flight {
+      0% {
+        transform: translate(var(--start-x), var(--start-y)) translate(-84%, -50%) rotate(var(--start-rot));
+      }
+      70% {
+        transform: translate(var(--mid-x), var(--mid-y)) translate(-84%, -50%) rotate(var(--mid-rot));
+      }
+      100% {
+        transform: translate(var(--end-x), var(--end-y)) translate(-84%, -50%) rotate(var(--end-rot));
+      }
+    }
+    @keyframes arrow-impact {
+      0% {
+        transform: translate(var(--end-x), var(--end-y)) translate(-84%, -50%) rotate(var(--end-rot));
+      }
+      60% {
+        transform: translate(var(--end-x), var(--end-y)) translate(-84%, -50%) rotate(calc(var(--end-rot) + 3deg)) scale(1.04);
+      }
+      100% {
+        transform: translate(var(--end-x), var(--end-y)) translate(-84%, -50%) rotate(var(--end-rot)) scale(1);
+      }
+    }
+    .win-banner {
+      position: absolute;
+      left: 50%;
+      bottom: 8px;
+      transform: translateX(-50%) scale(0.95);
+      background: #ffffff;
+      color: #111827;
+      border-radius: 14px;
+      padding: 10px 14px 12px;
+      min-width: min(280px, 88%);
+      box-shadow: 0 12px 30px rgba(0,0,0,.25);
+      opacity: 0;
+      pointer-events: none;
+      text-align: center;
+    }
+    .win-banner.is-visible {
+      opacity: 1;
+      transform: translateX(-50%) scale(1);
+      pointer-events: auto;
+      animation: banner-pop 280ms ease-out;
+    }
+    .win-banner__title { font-size: 16px; font-weight: 800; margin-bottom: 4px; }
+    .win-banner__text { font-size: 14px; color: #1f2937; }
+    .win-banner__close {
+      position: absolute;
+      top: 6px;
+      right: 8px;
+      border: 0;
+      background: transparent;
+      font-size: 18px;
+      line-height: 1;
+      cursor: pointer;
+      color: #6b7280;
+      padding: 0;
+      pointer-events: auto;
+    }
+    @keyframes banner-pop {
+      from { opacity: 0; transform: translateX(-50%) scale(0.9); }
+      to { opacity: 1; transform: translateX(-50%) scale(1); }
+    }
     button {
       appearance: none; border: 0; cursor: pointer;
       background: #3b82f6; color: white; font-weight: 700;
@@ -97,6 +180,32 @@
         </svg>
       </div>
       <canvas id="wheel" width="360" height="360"></canvas>
+      <div class="win-overlay" id="winOverlay" aria-hidden="true">
+        <div class="win-arrow" id="winArrow">
+          <svg viewBox="0 0 96 28" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="arrowShaft" x1="0" x2="1" y1="0" y2="0">
+                <stop offset="0" stop-color="#6b7280"/>
+                <stop offset="0.5" stop-color="#d1d5db"/>
+                <stop offset="1" stop-color="#9ca3af"/>
+              </linearGradient>
+              <linearGradient id="arrowHead" x1="0" x2="1" y1="0" y2="0">
+                <stop offset="0" stop-color="#fbbf24"/>
+                <stop offset="1" stop-color="#f59e0b"/>
+              </linearGradient>
+            </defs>
+            <path d="M6 8 L68 8 L68 4 L90 14 L68 24 L68 20 L6 20 Z" fill="url(#arrowShaft)" stroke="#374151" stroke-width="1.2" stroke-linejoin="round"/>
+            <path d="M64 6 L90 14 L64 22 Z" fill="url(#arrowHead)" stroke="#7c2d12" stroke-width="1"/>
+            <circle cx="10" cy="14" r="4" fill="#111827"/>
+            <circle cx="10" cy="14" r="2" fill="#f59e0b"/>
+          </svg>
+        </div>
+        <div class="win-banner" id="winBanner">
+          <button class="win-banner__close" type="button" aria-label="Закрыть">×</button>
+          <div class="win-banner__title">Поздравляем!</div>
+          <div class="win-banner__text" id="winPrizeText">—</div>
+        </div>
+      </div>
     </div>
 
     <div class="grid">
@@ -230,6 +339,11 @@ function playWin() {
     const statusEl = document.getElementById("status");
     const debugEl = document.getElementById("debug");
     const swordPointer = document.getElementById("swordPointer");
+    const winOverlay = document.getElementById("winOverlay");
+    const winArrow = document.getElementById("winArrow");
+    const winBanner = document.getElementById("winBanner");
+    const winPrizeText = document.getElementById("winPrizeText");
+    const winBannerClose = winBanner?.querySelector(".win-banner__close");
 
     const itemsInput = document.getElementById("itemsInput");
     const seedInput = document.getElementById("seedInput");
@@ -269,6 +383,73 @@ function playWin() {
       animation.onfinish = () => { swordTicking = false; };
       animation.oncancel = () => { swordTicking = false; };
     }
+
+    // ====== Win Effects ======
+    function clearWinEffects() {
+      if (!winArrow || !winBanner || !winPrizeText) return;
+      winArrow.classList.remove("is-animating", "is-active");
+      winBanner.classList.remove("is-visible");
+      winPrizeText.textContent = "—";
+      winArrow.style.animation = "none";
+      winArrow.offsetHeight;
+      winArrow.style.animation = "";
+    }
+
+    function getWinningTarget(idx) {
+      const n = items.length;
+      const slice = (Math.PI * 2) / n;
+      const centerAngle = angle + idx * slice + slice / 2;
+      const radius = r * 0.68;
+      const targetX = cx + Math.cos(centerAngle) * radius;
+      const targetY = cy + Math.sin(centerAngle) * radius;
+      const rect = winOverlay.getBoundingClientRect();
+      const scale = rect.width / canvas.width;
+      return {
+        x: targetX * scale,
+        y: targetY * scale,
+        scale
+      };
+    }
+
+    function runWinEffects({ idx, prize }) {
+      if (!winArrow || !winBanner || !winOverlay || !winPrizeText) return;
+      clearWinEffects();
+      const rect = winOverlay.getBoundingClientRect();
+      const startX = -rect.width * 0.2;
+      const startY = -rect.height * 0.2;
+      const target = getWinningTarget(idx);
+      const endX = target.x;
+      const endY = target.y;
+      const midX = (startX + endX) / 2 - rect.width * 0.08;
+      const midY = (startY + endY) / 2 - rect.height * 0.18;
+
+      const startRot = Math.atan2(midY - startY, midX - startX) * (180 / Math.PI);
+      const midRot = Math.atan2(endY - midY, endX - midX) * (180 / Math.PI);
+      const endRot = midRot;
+
+      winArrow.style.setProperty("--start-x", `${startX}px`);
+      winArrow.style.setProperty("--start-y", `${startY}px`);
+      winArrow.style.setProperty("--mid-x", `${midX}px`);
+      winArrow.style.setProperty("--mid-y", `${midY}px`);
+      winArrow.style.setProperty("--end-x", `${endX}px`);
+      winArrow.style.setProperty("--end-y", `${endY}px`);
+      winArrow.style.setProperty("--start-rot", `${startRot}deg`);
+      winArrow.style.setProperty("--mid-rot", `${midRot}deg`);
+      winArrow.style.setProperty("--end-rot", `${endRot}deg`);
+
+      winArrow.classList.add("is-active");
+      winArrow.classList.add("is-animating");
+
+      window.setTimeout(() => {
+        winPrizeText.textContent = prize;
+        winBanner.classList.add("is-visible");
+      }, 880);
+    }
+
+    winBannerClose?.addEventListener("click", (event) => {
+      event.stopPropagation();
+      winBanner.classList.remove("is-visible");
+    });
 
     // ====== Рендер колеса ======
     let woodNoisePattern = null;
@@ -496,6 +677,7 @@ function playWin() {
 
       items = parseItems(itemsInput.value);
       drawWheel();
+      clearWinEffects();
 
       spinning = true;
       lastTickStep = null;
@@ -551,6 +733,7 @@ if (tickStep !== lastTickStep) {
 
           resultEl.textContent = "Результат: " + prize;
           playWin();
+          runWinEffects({ idx, prize });
 
 
 if (tg) {
