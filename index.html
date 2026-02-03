@@ -69,14 +69,22 @@
         <svg viewBox="0 0 120 200" xmlns="http://www.w3.org/2000/svg">
           <defs>
             <linearGradient id="bladeGrad" x1="0" x2="0" y1="0" y2="1">
-              <stop offset="0" stop-color="#f7f3e8"/>
-              <stop offset="0.45" stop-color="#cfd6e0"/>
-              <stop offset="1" stop-color="#9aa4b2"/>
+              <stop offset="0" stop-color="#f6f8fb"/>
+              <stop offset="0.35" stop-color="#d9e1ec"/>
+              <stop offset="0.55" stop-color="#b8c2d1"/>
+              <stop offset="0.75" stop-color="#e6edf6"/>
+              <stop offset="1" stop-color="#8f9bac"/>
+            </linearGradient>
+            <linearGradient id="bladeShine" x1="0" x2="1" y1="0" y2="0">
+              <stop offset="0" stop-color="rgba(255,255,255,0)"/>
+              <stop offset="0.5" stop-color="rgba(255,255,255,0.55)"/>
+              <stop offset="1" stop-color="rgba(255,255,255,0)"/>
             </linearGradient>
             <linearGradient id="hiltGrad" x1="0" x2="1" y1="0" y2="0">
-              <stop offset="0" stop-color="#c7a56b"/>
-              <stop offset="0.5" stop-color="#e6c88a"/>
-              <stop offset="1" stop-color="#8f6a32"/>
+              <stop offset="0" stop-color="#a9742a"/>
+              <stop offset="0.45" stop-color="#efc67a"/>
+              <stop offset="0.75" stop-color="#c38a3d"/>
+              <stop offset="1" stop-color="#6e4318"/>
             </linearGradient>
           </defs>
           <circle cx="60" cy="18" r="10" fill="url(#hiltGrad)" stroke="#6a4a21" stroke-width="2"/>
@@ -85,6 +93,7 @@
           <rect x="28" y="60" width="64" height="16" rx="8" fill="url(#hiltGrad)" stroke="#6a4a21" stroke-width="2"/>
           <rect x="52" y="72" width="16" height="10" rx="5" fill="#a9b2c2"/>
           <path d="M54 80 L66 80 L66 156 L60 178 L54 156 Z" fill="url(#bladeGrad)" stroke="#707785" stroke-width="2" stroke-linejoin="round"/>
+          <path d="M56.5 84 L63.5 84 L63.5 151 L60 170 L56.5 151 Z" fill="url(#bladeShine)" opacity="0.55"/>
         </svg>
       </div>
       <canvas id="wheel" width="360" height="360"></canvas>
@@ -103,14 +112,42 @@
 let audioCtx = null;
 let soundEnabled = true;
 let lastTickStep = null;
+let tickGain = null;
+let metalGain = null;
+let winGain = null;
+let limiter = null;
 
 function ensureAudio() {
-  if (!soundEnabled) return null;
-  if (!audioCtx) {
-    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  try {
+    if (!soundEnabled) return null;
+    if (!audioCtx) {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      limiter = audioCtx.createDynamicsCompressor();
+      limiter.threshold.setValueAtTime(-16, audioCtx.currentTime);
+      limiter.knee.setValueAtTime(6, audioCtx.currentTime);
+      limiter.ratio.setValueAtTime(10, audioCtx.currentTime);
+      limiter.attack.setValueAtTime(0.004, audioCtx.currentTime);
+      limiter.release.setValueAtTime(0.08, audioCtx.currentTime);
+
+      tickGain = audioCtx.createGain();
+      metalGain = audioCtx.createGain();
+      winGain = audioCtx.createGain();
+
+      tickGain.gain.value = 0.08;
+      metalGain.gain.value = 0.035;
+      winGain.gain.value = 0.12;
+
+      tickGain.connect(limiter);
+      metalGain.connect(limiter);
+      winGain.connect(limiter);
+      limiter.connect(audioCtx.destination);
+    }
+    if (audioCtx.state === "suspended") audioCtx.resume();
+    return audioCtx;
+  } catch (error) {
+    console.warn("Audio init failed:", error);
+    return null;
   }
-  if (audioCtx.state === "suspended") audioCtx.resume();
-  return audioCtx;
 }
 
 function playTick() {
@@ -120,19 +157,31 @@ function playTick() {
 
     const o = ac.createOscillator();
     const g = ac.createGain();
+    const metal = ac.createOscillator();
+    const metalEnv = ac.createGain();
 
     o.type = "square";
-    o.frequency.value = 1400;
+    o.frequency.value = 1200;
+    metal.type = "triangle";
+    metal.frequency.value = 3200;
 
     const now = ac.currentTime;
     g.gain.setValueAtTime(0.0001, now);
-    g.gain.exponentialRampToValueAtTime(0.08, now + 0.003);
-    g.gain.exponentialRampToValueAtTime(0.0001, now + 0.035);
+    g.gain.exponentialRampToValueAtTime(0.8, now + 0.003);
+    g.gain.exponentialRampToValueAtTime(0.0001, now + 0.045);
+
+    metalEnv.gain.setValueAtTime(0.0001, now);
+    metalEnv.gain.exponentialRampToValueAtTime(0.7, now + 0.002);
+    metalEnv.gain.exponentialRampToValueAtTime(0.0001, now + 0.03);
 
     o.connect(g);
-    g.connect(ac.destination);
+    g.connect(tickGain);
+    metal.connect(metalEnv);
+    metalEnv.connect(metalGain);
     o.start(now);
-    o.stop(now + 0.04);
+    metal.start(now);
+    o.stop(now + 0.05);
+    metal.stop(now + 0.04);
   } catch (error) {
     console.warn("Tick sound failed:", error);
   }
@@ -158,7 +207,7 @@ function playWin() {
     o.frequency.setValueAtTime(990, now + 0.16);
 
     o.connect(g);
-    g.connect(ac.destination);
+    g.connect(winGain);
     o.start(now);
     o.stop(now + 0.28);
   } catch (error) {
@@ -222,6 +271,38 @@ function playWin() {
     }
 
     // ====== Рендер колеса ======
+    let woodNoisePattern = null;
+
+    function getWoodNoisePattern() {
+      if (woodNoisePattern) return woodNoisePattern;
+      const noiseCanvas = document.createElement("canvas");
+      const noiseSize = 140;
+      noiseCanvas.width = noiseSize;
+      noiseCanvas.height = noiseSize;
+      const nctx = noiseCanvas.getContext("2d");
+      const imageData = nctx.createImageData(noiseSize, noiseSize);
+      const data = imageData.data;
+      for (let i = 0; i < data.length; i += 4) {
+        const shade = 110 + Math.random() * 70;
+        data[i] = shade;
+        data[i + 1] = shade - 12;
+        data[i + 2] = shade - 26;
+        data[i + 3] = 32 + Math.random() * 60;
+      }
+      nctx.putImageData(imageData, 0, 0);
+      nctx.strokeStyle = "rgba(90,60,30,0.18)";
+      nctx.lineWidth = 1;
+      for (let i = 0; i < 16; i++) {
+        const y = (i + 1) * 8;
+        nctx.beginPath();
+        nctx.moveTo(0, y);
+        nctx.bezierCurveTo(noiseSize * 0.3, y - 2, noiseSize * 0.6, y + 2, noiseSize, y);
+        nctx.stroke();
+      }
+      woodNoisePattern = ctx.createPattern(noiseCanvas, "repeat");
+      return woodNoisePattern;
+    }
+
     function drawWheel() {
       ctx.clearRect(0, 0, size, size);
 
@@ -233,19 +314,16 @@ function playWin() {
         const start = angle + i * slice;
         const end = start + slice;
         const mid = start + slice / 2;
-        const isEven = i % 2 === 0;
-        const baseLight = isEven ? "#d5a16b" : "#c48b55";
-        const baseMid = isEven ? "#b57a44" : "#a26c3a";
-        const baseDark = isEven ? "#8a582d" : "#7a4c24";
+        const hueShift = ((i * 7) % 12) - 6;
+        const baseHue = 28 + hueShift;
+        const baseLight = `hsl(${baseHue}, 48%, 58%)`;
+        const baseMid = `hsl(${baseHue - 2}, 52%, 44%)`;
+        const baseDark = `hsl(${baseHue - 4}, 56%, 32%)`;
 
-        const grad = ctx.createLinearGradient(
-          cx + Math.cos(mid) * r * 0.1,
-          cy + Math.sin(mid) * r * 0.1,
-          cx + Math.cos(mid) * r,
-          cy + Math.sin(mid) * r
-        );
-        grad.addColorStop(0, baseLight);
-        grad.addColorStop(0.5, baseMid);
+        const grad = ctx.createRadialGradient(cx, cy, r * 0.08, cx, cy, r);
+        grad.addColorStop(0, "rgba(255,248,236,0.9)");
+        grad.addColorStop(0.28, baseLight);
+        grad.addColorStop(0.62, baseMid);
         grad.addColorStop(1, baseDark);
 
         // цвет сектора
@@ -258,6 +336,10 @@ function playWin() {
 
         // текстура дерева
         ctx.save();
+        ctx.fillStyle = getWoodNoisePattern();
+        ctx.globalAlpha = 0.2;
+        ctx.fill();
+        ctx.globalAlpha = 1;
         ctx.strokeStyle = "rgba(255,255,255,.12)";
         ctx.lineWidth = 1;
         for (let ring = 0; ring < 3; ring++) {
@@ -266,6 +348,30 @@ function playWin() {
           ctx.arc(cx, cy, ringRadius, start, end);
           ctx.stroke();
         }
+        ctx.restore();
+
+        ctx.save();
+        ctx.globalCompositeOperation = "multiply";
+        ctx.strokeStyle = "rgba(60,40,20,0.35)";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.arc(cx, cy, r, start, end);
+        ctx.closePath();
+        ctx.stroke();
+        ctx.restore();
+
+        ctx.save();
+        const sheen = ctx.createRadialGradient(cx, cy, innerRadius * 0.2, cx, cy, r * 0.7);
+        sheen.addColorStop(0, "rgba(255,255,255,0.25)");
+        sheen.addColorStop(0.5, "rgba(255,255,255,0)");
+        ctx.fillStyle = sheen;
+        ctx.globalCompositeOperation = "screen";
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.arc(cx, cy, r, start, end);
+        ctx.closePath();
+        ctx.fill();
         ctx.restore();
 
         // текст
@@ -283,27 +389,49 @@ function playWin() {
 
       // бронзовые разделители
       ctx.save();
-      ctx.strokeStyle = "#b07a34";
-      ctx.lineWidth = 3;
+      ctx.lineWidth = 2.6;
       for (let i = 0; i < n; i++) {
         const lineAngle = angle + i * slice;
+        const x1 = cx + Math.cos(lineAngle) * innerRadius;
+        const y1 = cy + Math.sin(lineAngle) * innerRadius;
+        const x2 = cx + Math.cos(lineAngle) * r;
+        const y2 = cy + Math.sin(lineAngle) * r;
+        const metalLine = ctx.createLinearGradient(x1, y1, x2, y2);
+        metalLine.addColorStop(0, "#6d461d");
+        metalLine.addColorStop(0.4, "#e0b165");
+        metalLine.addColorStop(1, "#8a5b25");
+        ctx.strokeStyle = metalLine;
         ctx.beginPath();
-        ctx.moveTo(cx + Math.cos(lineAngle) * innerRadius, cy + Math.sin(lineAngle) * innerRadius);
-        ctx.lineTo(cx + Math.cos(lineAngle) * r, cy + Math.sin(lineAngle) * r);
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
         ctx.stroke();
       }
       ctx.restore();
 
       // бронзовая окантовка
-      const rimGradient = ctx.createRadialGradient(cx, cy, r * 0.72, cx, cy, r + 8);
-      rimGradient.addColorStop(0, "#8b5a2c");
-      rimGradient.addColorStop(0.5, "#c89a52");
-      rimGradient.addColorStop(1, "#5a3b1c");
+      const rimGradient = ctx.createRadialGradient(cx, cy, r * 0.72, cx, cy, r + 10);
+      rimGradient.addColorStop(0, "#6a3f17");
+      rimGradient.addColorStop(0.38, "#b97a34");
+      rimGradient.addColorStop(0.55, "#f0c97a");
+      rimGradient.addColorStop(0.72, "#b97a34");
+      rimGradient.addColorStop(1, "#4a2d12");
       ctx.beginPath();
       ctx.arc(cx, cy, r + 3, 0, Math.PI * 2);
       ctx.strokeStyle = rimGradient;
       ctx.lineWidth = 12;
       ctx.stroke();
+
+      ctx.save();
+      const rimHighlight = ctx.createLinearGradient(cx - r, cy - r, cx + r, cy + r);
+      rimHighlight.addColorStop(0, "rgba(255,255,255,0)");
+      rimHighlight.addColorStop(0.5, "rgba(255,236,196,0.35)");
+      rimHighlight.addColorStop(1, "rgba(255,255,255,0)");
+      ctx.strokeStyle = rimHighlight;
+      ctx.lineWidth = 5;
+      ctx.beginPath();
+      ctx.arc(cx, cy, r + 3, -Math.PI * 0.2, Math.PI * 0.7);
+      ctx.stroke();
+      ctx.restore();
 
       // внутреннее кольцо
       const innerGradient = ctx.createRadialGradient(cx, cy, innerRadius * 0.3, cx, cy, innerRadius);
