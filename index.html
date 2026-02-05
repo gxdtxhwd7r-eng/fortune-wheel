@@ -12,18 +12,6 @@
     .row { display: flex; gap: 14px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
     .wheel-wrap { position: relative; display: grid; place-items: center; gap: 10px; margin-top: 12px; }
     canvas { background: transparent; }
-    #swordPointer {
-      position: absolute;
-      top: -6px;
-      left: 50%;
-      width: 72px;
-      transform: translateX(-50%) rotate(0deg);
-      transform-origin: 50% 20%;
-      z-index: 3;
-      filter: drop-shadow(0 6px 10px rgba(0,0,0,.45));
-      pointer-events: none;
-    }
-    #swordPointer svg { width: 100%; height: auto; display: block; }
     .win-overlay {
       position: absolute;
       inset: 0;
@@ -32,9 +20,9 @@
     }
     .win-bow {
       position: absolute;
-      top: 6%;
-      left: 6%;
-      width: clamp(120px, 26vw, 170px);
+      top: 4%;
+      left: 4%;
+      width: clamp(140px, 30vw, 190px);
       opacity: 0;
       transform: translateY(-10px) scale(0.95);
       filter: drop-shadow(0 10px 20px rgba(0,0,0,0.45));
@@ -47,19 +35,19 @@
       transform: translateY(0) scale(1);
     }
     .bow-string {
-      transform-origin: 60% 50%;
-      transition: transform 260ms ease;
+      transform-origin: 72% 50%;
+      transition: transform 280ms ease;
     }
-    .bow-limb {
+    .bow-body {
       transform-origin: 50% 50%;
       transition: transform 260ms ease;
     }
     .win-arrow {
       position: absolute;
-      width: clamp(120px, 30vw, 170px);
+      width: clamp(150px, 34vw, 210px);
       height: auto;
       opacity: 0;
-      transform-origin: 82% 50%;
+      transform-origin: 18% 50%;
       filter: drop-shadow(0 6px 10px rgba(0,0,0,0.45));
       pointer-events: none;
     }
@@ -67,20 +55,17 @@
     .win-arrow.is-active { opacity: 1; }
     .win-arrow.is-nocked {
       opacity: 1;
-      transform: translate(var(--bow-x), var(--bow-y)) translate(-82%, -50%) rotate(var(--bow-rot));
+      transform: translate(var(--bow-x), var(--bow-y)) translate(-18%, -50%) rotate(var(--bow-rot));
       transition: transform 260ms ease, opacity 120ms ease;
     }
     .win-overlay.is-drawing .win-arrow.is-nocked {
-      transform: translate(var(--bow-x), var(--bow-y)) translate(-82%, -50%) rotate(var(--bow-rot)) translateX(-20px);
+      transform: translate(var(--bow-x), var(--bow-y)) translate(-18%, -50%) rotate(var(--bow-rot)) translateX(-24px);
     }
     .win-overlay.is-drawing .bow-string {
-      transform: translateX(-10px);
+      transform: translateX(-12px);
     }
-    .win-overlay.is-drawing .bow-limb.left {
-      transform: rotate(-1.2deg);
-    }
-    .win-overlay.is-drawing .bow-limb.right {
-      transform: rotate(1.2deg);
+    .win-overlay.is-drawing .bow-body {
+      transform: rotate(-1.4deg);
     }
     .win-arrow.is-animating {
       animation:
@@ -89,24 +74,24 @@
     }
     @keyframes arrow-flight {
       0% {
-        transform: translate(var(--start-x), var(--start-y)) translate(-84%, -50%) rotate(var(--start-rot));
+        transform: translate(var(--start-x), var(--start-y)) translate(-18%, -50%) rotate(var(--start-rot));
       }
       70% {
-        transform: translate(var(--mid-x), var(--mid-y)) translate(-84%, -50%) rotate(var(--mid-rot));
+        transform: translate(var(--mid-x), var(--mid-y)) translate(-18%, -50%) rotate(var(--mid-rot));
       }
       100% {
-        transform: translate(var(--end-x), var(--end-y)) translate(-84%, -50%) rotate(var(--end-rot));
+        transform: translate(var(--end-x), var(--end-y)) translate(-18%, -50%) rotate(var(--end-rot));
       }
     }
     @keyframes arrow-impact {
       0% {
-        transform: translate(var(--end-x), var(--end-y)) translate(-84%, -50%) rotate(var(--end-rot));
+        transform: translate(var(--end-x), var(--end-y)) translate(-18%, -50%) rotate(var(--end-rot));
       }
       60% {
-        transform: translate(var(--end-x), var(--end-y)) translate(-84%, -50%) rotate(calc(var(--end-rot) + 3deg)) scale(1.04);
+        transform: translate(var(--end-x), var(--end-y)) translate(-18%, -50%) rotate(calc(var(--end-rot) + 3deg)) scale(1.04);
       }
       100% {
-        transform: translate(var(--end-x), var(--end-y)) translate(-84%, -50%) rotate(var(--end-rot)) scale(1);
+        transform: translate(var(--end-x), var(--end-y)) translate(-18%, -50%) rotate(var(--end-rot)) scale(1);
       }
     }
     .win-modal-backdrop {
@@ -223,82 +208,51 @@
     </div>
 
     <div class="wheel-wrap">
-      <div id="swordPointer" aria-hidden="true">
-        <svg viewBox="0 0 120 200" xmlns="http://www.w3.org/2000/svg">
-          <defs>
-            <linearGradient id="bladeGrad" x1="0" x2="0" y1="0" y2="1">
-              <stop offset="0" stop-color="#f6f8fb"/>
-              <stop offset="0.35" stop-color="#d9e1ec"/>
-              <stop offset="0.55" stop-color="#b8c2d1"/>
-              <stop offset="0.75" stop-color="#e6edf6"/>
-              <stop offset="1" stop-color="#8f9bac"/>
-            </linearGradient>
-            <linearGradient id="bladeShine" x1="0" x2="1" y1="0" y2="0">
-              <stop offset="0" stop-color="rgba(255,255,255,0)"/>
-              <stop offset="0.5" stop-color="rgba(255,255,255,0.55)"/>
-              <stop offset="1" stop-color="rgba(255,255,255,0)"/>
-            </linearGradient>
-            <linearGradient id="hiltGrad" x1="0" x2="1" y1="0" y2="0">
-              <stop offset="0" stop-color="#a9742a"/>
-              <stop offset="0.45" stop-color="#efc67a"/>
-              <stop offset="0.75" stop-color="#c38a3d"/>
-              <stop offset="1" stop-color="#6e4318"/>
-            </linearGradient>
-          </defs>
-          <circle cx="60" cy="18" r="10" fill="url(#hiltGrad)" stroke="#6a4a21" stroke-width="2"/>
-          <circle cx="60" cy="18" r="4" fill="#3a240f"/>
-          <rect x="52" y="28" width="16" height="30" rx="6" fill="#5d3a1c"/>
-          <rect x="28" y="60" width="64" height="16" rx="8" fill="url(#hiltGrad)" stroke="#6a4a21" stroke-width="2"/>
-          <rect x="52" y="72" width="16" height="10" rx="5" fill="#a9b2c2"/>
-          <path d="M54 80 L66 80 L66 156 L60 178 L54 156 Z" fill="url(#bladeGrad)" stroke="#707785" stroke-width="2" stroke-linejoin="round"/>
-          <path d="M56.5 84 L63.5 84 L63.5 151 L60 170 L56.5 151 Z" fill="url(#bladeShine)" opacity="0.55"/>
-        </svg>
-      </div>
       <canvas id="wheel" width="360" height="360"></canvas>
       <div class="win-overlay" id="winOverlay" aria-hidden="true">
         <div class="win-bow" id="winBow">
           <svg viewBox="0 0 220 220" xmlns="http://www.w3.org/2000/svg">
             <defs>
-              <linearGradient id="bowWood" x1="0" x2="1" y1="0" y2="1">
-                <stop offset="0" stop-color="#3b2413"/>
-                <stop offset="0.5" stop-color="#7a4a24"/>
-                <stop offset="1" stop-color="#2a160a"/>
+              <linearGradient id="bowWood" x1="0" x2="0" y1="0" y2="1">
+                <stop offset="0" stop-color="#5a3519"/>
+                <stop offset="0.5" stop-color="#9c5f2d"/>
+                <stop offset="1" stop-color="#3f220f"/>
               </linearGradient>
-              <linearGradient id="bowHighlight" x1="0" x2="0" y1="0" y2="1">
-                <stop offset="0" stop-color="rgba(255,255,255,0.35)"/>
-                <stop offset="1" stop-color="rgba(255,255,255,0)"/>
+              <linearGradient id="bowEdge" x1="0" x2="1" y1="0" y2="0">
+                <stop offset="0" stop-color="rgba(255,255,255,0.25)"/>
+                <stop offset="0.5" stop-color="rgba(255,255,255,0)"/>
+                <stop offset="1" stop-color="rgba(0,0,0,0.2)"/>
               </linearGradient>
             </defs>
-            <path class="bow-limb left" d="M60 20 C30 70 30 150 60 200" stroke="url(#bowWood)" stroke-width="16" stroke-linecap="round" fill="none"/>
-            <path class="bow-limb right" d="M160 20 C190 70 190 150 160 200" stroke="url(#bowWood)" stroke-width="16" stroke-linecap="round" fill="none"/>
-            <path d="M60 20 C35 70 35 150 60 200" stroke="url(#bowHighlight)" stroke-width="6" stroke-linecap="round" fill="none" opacity="0.5"/>
-            <rect x="96" y="86" width="28" height="48" rx="12" fill="#1f2937" opacity="0.85"/>
-            <rect x="100" y="92" width="20" height="36" rx="8" fill="#374151"/>
-            <path class="bow-string" d="M64 30 Q110 110 64 190" stroke="#e2e8f0" stroke-width="2" fill="none"/>
-            <path class="bow-string" d="M156 30 Q110 110 156 190" stroke="#e2e8f0" stroke-width="2" fill="none"/>
+            <path class="bow-body" d="M70 16 C42 64 36 108 46 152 C54 186 70 206 92 210 C108 212 122 202 132 186 C146 162 150 126 144 96 C138 64 122 38 100 22 C88 14 78 14 70 16 Z" fill="url(#bowWood)" stroke="#3c220f" stroke-width="4"/>
+            <path d="M74 20 C48 66 46 110 56 150 C64 182 80 198 96 202 C110 204 122 196 130 180 C142 158 144 124 138 96 C132 68 118 42 98 30 C88 24 80 22 74 20 Z" fill="none" stroke="url(#bowEdge)" stroke-width="6" opacity="0.6"/>
+            <rect x="92" y="94" width="28" height="46" rx="12" fill="#1f2937" opacity="0.85"/>
+            <rect x="96" y="100" width="20" height="34" rx="8" fill="#374151"/>
+            <path class="bow-string" d="M78 28 Q132 110 98 196" stroke="#e2e8f0" stroke-width="2.4" fill="none"/>
           </svg>
         </div>
         <div class="win-arrow" id="winArrow">
-          <svg viewBox="0 0 180 32" xmlns="http://www.w3.org/2000/svg">
+          <svg viewBox="0 0 220 40" xmlns="http://www.w3.org/2000/svg">
             <defs>
               <linearGradient id="arrowShaft" x1="0" x2="1" y1="0" y2="0">
-                <stop offset="0" stop-color="#3f2d1b"/>
-                <stop offset="0.45" stop-color="#5a3b24"/>
-                <stop offset="0.7" stop-color="#2d1c10"/>
-                <stop offset="1" stop-color="#3b2a1a"/>
+                <stop offset="0" stop-color="#3d2a18"/>
+                <stop offset="0.4" stop-color="#7b4b2a"/>
+                <stop offset="0.7" stop-color="#3a2314"/>
+                <stop offset="1" stop-color="#2a1a0e"/>
               </linearGradient>
               <linearGradient id="arrowHead" x1="0" x2="1" y1="0" y2="0">
-                <stop offset="0" stop-color="#cbd5e1"/>
-                <stop offset="0.6" stop-color="#94a3b8"/>
-                <stop offset="1" stop-color="#64748b"/>
+                <stop offset="0" stop-color="#f1f5f9"/>
+                <stop offset="0.5" stop-color="#b0bccd"/>
+                <stop offset="1" stop-color="#7a8698"/>
               </linearGradient>
             </defs>
-            <rect x="18" y="13" width="122" height="6" rx="3" fill="url(#arrowShaft)"/>
-            <rect x="18" y="12" width="122" height="2" rx="1" fill="rgba(255,255,255,0.2)"/>
-            <path d="M140 8 L174 16 L140 24 Z" fill="url(#arrowHead)" stroke="#475569" stroke-width="1"/>
-            <path d="M14 10 L30 16 L14 22 Z" fill="#f8fafc" stroke="#64748b" stroke-width="1"/>
-            <path d="M2 6 C8 6 10 12 10 16 C10 20 8 26 2 26" fill="#cbd5f5"/>
-            <path d="M6 6 C12 6 14 12 14 16 C14 20 12 26 6 26" fill="#94a3b8"/>
+            <rect x="34" y="17" width="140" height="6" rx="3" fill="url(#arrowShaft)"/>
+            <rect x="34" y="16" width="140" height="2" rx="1" fill="rgba(255,255,255,0.25)"/>
+            <path d="M174 12 L214 20 L174 28 Z" fill="url(#arrowHead)" stroke="#516173" stroke-width="1"/>
+            <path d="M28 14 L42 20 L28 26 Z" fill="#f8fafc" stroke="#94a3b8" stroke-width="1"/>
+            <path d="M8 10 C18 12 24 16 26 20 C24 24 18 28 8 30" fill="#e2e8f0"/>
+            <path d="M12 8 C22 11 30 16 32 20 C30 24 22 29 12 32" fill="#cbd5f5"/>
+            <path d="M6 14 C14 16 18 18 20 20 C18 22 14 24 6 26" fill="#94a3b8"/>
           </svg>
         </div>
         <div class="win-modal-backdrop" id="winModalBackdrop"></div>
@@ -328,6 +282,9 @@ let lastTickStep = null;
 let tickGain = null;
 let metalGain = null;
 let winGain = null;
+let bowDrawGain = null;
+let bowReleaseGain = null;
+let bowImpactGain = null;
 let limiter = null;
 
 function ensureAudio() {
@@ -345,14 +302,23 @@ function ensureAudio() {
       tickGain = audioCtx.createGain();
       metalGain = audioCtx.createGain();
       winGain = audioCtx.createGain();
+      bowDrawGain = audioCtx.createGain();
+      bowReleaseGain = audioCtx.createGain();
+      bowImpactGain = audioCtx.createGain();
 
       tickGain.gain.value = 0.08;
       metalGain.gain.value = 0.035;
       winGain.gain.value = 0.12;
+      bowDrawGain.gain.value = 0.02;
+      bowReleaseGain.gain.value = 0.045;
+      bowImpactGain.gain.value = 0.03;
 
       tickGain.connect(limiter);
       metalGain.connect(limiter);
       winGain.connect(limiter);
+      bowDrawGain.connect(limiter);
+      bowReleaseGain.connect(limiter);
+      bowImpactGain.connect(limiter);
       limiter.connect(audioCtx.destination);
     }
     if (audioCtx.state === "suspended") audioCtx.resume();
@@ -428,6 +394,106 @@ function playWin() {
   }
 }
 
+function playBowDraw() {
+  try {
+    const ac = ensureAudio();
+    if (!ac) return;
+    const now = ac.currentTime;
+    const osc = ac.createOscillator();
+    const mod = ac.createOscillator();
+    const modGain = ac.createGain();
+    const filter = ac.createBiquadFilter();
+    const gain = ac.createGain();
+
+    osc.type = "sawtooth";
+    osc.frequency.setValueAtTime(140, now);
+    osc.frequency.exponentialRampToValueAtTime(90, now + 0.35);
+
+    mod.type = "sine";
+    mod.frequency.setValueAtTime(6, now);
+    modGain.gain.setValueAtTime(18, now);
+    mod.connect(modGain);
+    modGain.connect(osc.frequency);
+
+    filter.type = "lowpass";
+    filter.frequency.setValueAtTime(650, now);
+    filter.frequency.exponentialRampToValueAtTime(420, now + 0.35);
+
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(0.6, now + 0.08);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.36);
+
+    osc.connect(filter);
+    filter.connect(gain);
+    gain.connect(bowDrawGain);
+
+    osc.start(now);
+    mod.start(now);
+    osc.stop(now + 0.38);
+    mod.stop(now + 0.38);
+  } catch (error) {
+    console.warn("Bow draw sound failed:", error);
+  }
+}
+
+function playBowRelease() {
+  try {
+    const ac = ensureAudio();
+    if (!ac) return;
+    const now = ac.currentTime;
+    const osc = ac.createOscillator();
+    const gain = ac.createGain();
+
+    osc.type = "triangle";
+    osc.frequency.setValueAtTime(980, now);
+    osc.frequency.exponentialRampToValueAtTime(320, now + 0.12);
+
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(0.7, now + 0.012);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.14);
+
+    osc.connect(gain);
+    gain.connect(bowReleaseGain);
+    osc.start(now);
+    osc.stop(now + 0.15);
+  } catch (error) {
+    console.warn("Bow release sound failed:", error);
+  }
+}
+
+function playBowImpact() {
+  try {
+    const ac = ensureAudio();
+    if (!ac) return;
+    const now = ac.currentTime;
+    const noise = ac.createBufferSource();
+    const buffer = ac.createBuffer(1, ac.sampleRate * 0.15, ac.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < data.length; i += 1) {
+      data[i] = (Math.random() * 2 - 1) * (1 - i / data.length);
+    }
+    noise.buffer = buffer;
+
+    const filter = ac.createBiquadFilter();
+    filter.type = "bandpass";
+    filter.frequency.setValueAtTime(820, now);
+    filter.Q.setValueAtTime(2.4, now);
+
+    const gain = ac.createGain();
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(0.5, now + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.18);
+
+    noise.connect(filter);
+    filter.connect(gain);
+    gain.connect(bowImpactGain);
+    noise.start(now);
+    noise.stop(now + 0.16);
+  } catch (error) {
+    console.warn("Bow impact sound failed:", error);
+  }
+}
+
   if (tg) {
     tg.ready();
     tg.expand();
@@ -442,7 +508,6 @@ function playWin() {
     const resultEl = document.getElementById("result");
     const statusEl = document.getElementById("status");
     const debugEl = document.getElementById("debug");
-    const swordPointer = document.getElementById("swordPointer");
     const winOverlay = document.getElementById("winOverlay");
     const winBow = document.getElementById("winBow");
     const winArrow = document.getElementById("winArrow");
@@ -459,7 +524,6 @@ function playWin() {
     let items = parseItems(itemsInput.value);
     let angle = 0;          // текущий угол вращения
     let spinning = false;
-    let swordTicking = false;
     let winTimeouts = [];
     let lastWin = null;
 
@@ -468,31 +532,6 @@ function playWin() {
     const cx = size / 2;
     const cy = size / 2;
     const r = size / 2 - 8;
-
-    function swordTick(strength = 1) {
-      if (!swordPointer || swordTicking) return;
-      swordTicking = true;
-      const clamped = Math.min(1.4, Math.max(0.6, strength));
-      const maxTilt = -18 * clamped;
-      const base = "translateX(-50%) rotate(0deg)";
-      const kick = `translateX(-50%) rotate(${maxTilt}deg)`;
-
-      if (typeof swordPointer.animate !== "function") {
-        swordPointer.style.transform = kick;
-        setTimeout(() => {
-          swordPointer.style.transform = base;
-          swordTicking = false;
-        }, 200);
-        return;
-      }
-
-      const animation = swordPointer.animate(
-        [{ transform: base }, { transform: kick }, { transform: base }],
-        { duration: 240, easing: "cubic-bezier(0.25, 0.6, 0.2, 1.4)" }
-      );
-      animation.onfinish = () => { swordTicking = false; };
-      animation.oncancel = () => { swordTicking = false; };
-    }
 
     // ====== Win Effects ======
     function clearWinEffects() {
@@ -528,8 +567,8 @@ function playWin() {
       const bowRect = winBow.getBoundingClientRect();
       const overlayRect = winOverlay.getBoundingClientRect();
       return {
-        x: bowRect.left + bowRect.width * 0.78 - overlayRect.left,
-        y: bowRect.top + bowRect.height * 0.5 - overlayRect.top
+        x: bowRect.left + bowRect.width * 0.72 - overlayRect.left,
+        y: bowRect.top + bowRect.height * 0.52 - overlayRect.top
       };
     }
 
@@ -584,9 +623,12 @@ function playWin() {
       winOverlay.classList.add("is-drawing");
       winArrow.classList.add("is-active", "is-nocked");
 
-      const drawDuration = 320;
+      const drawDuration = 340;
       const releaseDelay = drawDuration + 60;
+      const impactDelay = releaseDelay + 720;
       const modalDelay = releaseDelay + 980;
+
+      playBowDraw();
 
       winTimeouts.push(window.setTimeout(() => {
         winOverlay.classList.remove("is-drawing");
@@ -595,11 +637,16 @@ function playWin() {
       winTimeouts.push(window.setTimeout(() => {
         winArrow.classList.remove("is-nocked");
         winArrow.classList.add("is-animating");
+        playBowRelease();
       }, releaseDelay));
 
       winTimeouts.push(window.setTimeout(() => {
         winBow.classList.remove("is-visible");
       }, releaseDelay + 350));
+
+      winTimeouts.push(window.setTimeout(() => {
+        playBowImpact();
+      }, impactDelay));
 
       winTimeouts.push(window.setTimeout(() => {
         showWinModal({ idx, prize, items });
@@ -891,7 +938,6 @@ const tickStep = Math.floor(angle / step);
 if (tickStep !== lastTickStep) {
   lastTickStep = tickStep;
   playTick();
-  swordTick();
       }
 
 
